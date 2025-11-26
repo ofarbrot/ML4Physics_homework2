@@ -1,6 +1,6 @@
 # ML4Physics – Homework 2: Regression of Anomalous Exponent α
 
-This repository contains my solution to **Task 2** of the ML4Physics homework:
+This repository contains our solution to **Task 2** of the ML4Physics homework:
 regression of the anomalous diffusion exponent **α** from stochastic trajectories
 generated via Fractional Brownian motion.
 
