@@ -20,7 +20,7 @@ def load_train_val_loaders(
     y_path = os.path.join(data_dir, y_file)
 
     X = torch.load(x_path, map_location="cpu").float()
-    y = torch.load(y_path, map_location="cpu").long()
+    y = torch.load(y_path, map_location="cpu").float()
 
     if X.ndim != 2:
         raise ValueError(f"Expected X to have shape N x T, got {tuple(X.shape)}")
