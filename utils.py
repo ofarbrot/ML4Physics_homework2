@@ -1,5 +1,4 @@
 import os
-os.chdir("..")
 import torch
 from typing import Tuple
 from torch.utils.data import TensorDataset, DataLoader, random_split
@@ -13,8 +12,8 @@ def load_train_val_loaders(
     seed: int = 42,
 )->Tuple[DataLoader, DataLoader]:
     """
-    Loads tensors from .pt files (expects N x M x M inputs, N labels) and returns
-    train and validation DataLoaders.
+    Loads tensors from .pt files (expects N x T trajectories/inputs, N labels/alpha) and 
+    returns train and validation DataLoaders.
     """
 
     x_path = os.path.join(data_dir, x_file)
@@ -23,8 +22,8 @@ def load_train_val_loaders(
     X = torch.load(x_path, map_location="cpu").float()
     y = torch.load(y_path, map_location="cpu").long()
 
-    if X.ndim != 3:
-        raise ValueError(f"Expected X to have shape N x M x M, got {tuple(X.shape)}")
+    if X.ndim != 2:
+        raise ValueError(f"Expected X to have shape N x T, got {tuple(X.shape)}")
     if y.ndim != 1:
         raise ValueError(f"Expected y to have shape (N,), got {tuple(y.shape)}")
 
