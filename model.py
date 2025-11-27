@@ -9,7 +9,20 @@ class model(nn.Module):
 
         # --- DEFINING LAYERS ---
         # Anta input-shape: (N, T). Vi legger til en kanal-dimensjon i forward: (N, 1, T)
+        self.conv_net = nn.Sequential(
+            # First conv: see local correlations over a window of 5 time steps
+            nn.Conv1d(in_channels=1, out_channels=32, kernel_size=5, padding=2),
+            nn.LeakyReLU(0.1),
 
+            # Second conv: build on first-level features
+            nn.Conv1d(in_channels=32, out_channels=64, kernel_size=5, padding=2),
+            nn.LeakyReLU(0.1),
+
+            # Third conv: slightly wider kernel to catch longer correlations
+            nn.Conv1d(in_channels=64, out_channels=64, kernel_size=7, padding=3),
+            nn.LeakyReLU(0.1),
+        )
+        """
         self.conv1 = nn.Conv1d(
             in_channels=1,
             out_channels=16,
@@ -27,7 +40,7 @@ class model(nn.Module):
             out_channels=64,
             kernel_size=5,
             padding=2
-        )
+        )"""
 
         self.pool = nn.MaxPool1d(kernel_size=2)
         self.dropout = nn.Dropout(p=0.2)
@@ -36,8 +49,13 @@ class model(nn.Module):
         self.global_pool = nn.AdaptiveAvgPool1d(1)
 
         # Fully connected del for regresjon til én skalar
-        self.fc1 = nn.Linear(64, 64)
-        self.fc2 = nn.Linear(64, 1)
+        """        self.fc1 = nn.Linear(64, 64)
+        self.fc2 = nn.Linear(64, 1)"""
+        self.regressor = nn.Sequential(
+            nn.Linear(64, 64),
+            nn.LeakyReLU(0.1),
+            nn.Linear(64, 1)   # raw scalar, will be squashed to [0,2] in forward()
+        )
 
         # --- WEIGHT LOADING ---
         if load_weights:
@@ -54,7 +72,7 @@ class model(nn.Module):
             except FileNotFoundError:
                 print("Warning: model_weights.pth not found, using random weights.")
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward1(self, x: torch.Tensor) -> torch.Tensor:
         """
         Forventer x med shape (N, T) eller (T,) for én enkelt traj.
         Returnerer tensor med shape (N,) med predikerte alfabetraktorer.
@@ -97,6 +115,25 @@ class model(nn.Module):
 
         # Returner (N,)
         return x.squeeze(1)
+    
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+
+        # Add channel dimension: (B, T) → (B, 1, T)
+        x = x.unsqueeze(1)
+
+        # Extract temporal features with 1D convs
+        features = self.conv_net(x)            # (B, 64, T)
+
+        # Global average pool over time: (B, 64, T) → (B, 64, 1) → (B, 64)
+        pooled = self.global_pool(features).squeeze(-1)
+
+        # Map to a scalar
+        alpha_raw = self.regressor(pooled).squeeze(-1)  # (B,)
+
+        # Constrain to [0, 2] by using a sigmoid and scaling
+        alpha = 2.0 * torch.sigmoid(alpha_raw)
+
+        return alpha
 
     def pred(self, x: torch.Tensor) -> torch.Tensor:
         """
