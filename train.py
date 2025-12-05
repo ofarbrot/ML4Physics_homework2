@@ -30,8 +30,8 @@ def TrainingAlgorithm(model, train_loader, val_loader, num_epochs, patience=10, 
             X_batch = X_batch.to(device).float()
             y_batch = y_batch.to(device).float()
 
-            preds = model(X_batch)               # predicted alpha
-            preds = preds.view_as(y_batch)       # ensure same shape
+            preds = model(X_batch)             
+            preds = preds.view_as(y_batch)      
 
             loss = loss_func(preds, y_batch)
 
@@ -67,7 +67,7 @@ def TrainingAlgorithm(model, train_loader, val_loader, num_epochs, patience=10, 
         avg_eval_loss = total_eval_loss / len(val_loader)
         eval_losses.append(avg_eval_loss)
 
-        # (Optional) extra metric: MAE
+        # MAE
         preds_cat = torch.cat(all_preds).view(-1)
         targets_cat = torch.cat(all_targets).view(-1)
         val_mae = torch.mean(torch.abs(preds_cat - targets_cat)).item()
